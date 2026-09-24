@@ -31,6 +31,19 @@ jobs:
           name: bend-2.0.24-part-01
           path: bend.part.01
           retention-days: 1
+      - name: Check bundled Git histories from a clean checkout
+        shell: bash
+        run: |
+          mkdir -p workspace-check package-check
+          git -C workspace-check init -q
+          git -C workspace-check fetch -q ../snapshots/workspace.bundle '+refs/*:refs/*'
+          git -C workspace-check checkout -q master
+          grep -q 'path: cons' workspace-check/.bv/workspace.yaml
+          git -C package-check init -q
+          git -C package-check fetch -q ../snapshots/cons.bundle '+refs/*:refs/*'
+          git -C package-check checkout -q main
+          git -C package-check merge-base --is-ancestor cons/frozen HEAD
+          (cd package-check && bash gate.sh check)
       - name: Check both Bend proofs
         run: |
           bend --help | head -1
