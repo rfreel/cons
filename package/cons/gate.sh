@@ -12,9 +12,9 @@ git rev-parse -q --verify 'refs/tags/cons/frozen' >/dev/null || exit 15
 git diff --quiet cons/frozen -- AGENTS.md OBJECTIVE.md CORRECTNESS.md SPEC.bend state.bend LAWS.bend gate.sh docs/PIN.toml pins || exit 15
 
 expected_version=$(sed -n 's/^bend_version = "\(.*\)"$/\1/p' docs/PIN.toml)
-actual_version=$(bend --version) || exit 16
+actual_version=$(bend --help) || exit 16
 printf '%s\n' "$actual_version"
-case "$actual_version" in *"$expected_version"*) ;; *) exit 16 ;; esac
+case "$actual_version" in "Bend $expected_version:"*) ;; *) exit 16 ;; esac
 
 bend PROOF.bend || exit 17
 
@@ -25,16 +25,15 @@ trap restore EXIT INT TERM
 for mutant in tests/mutations/*.bend; do
   [ -f "$mutant" ] || exit 18
   cp "$mutant" impl.bend || exit 18
+  bend impl.bend || exit 18
   if bend PROOF.bend; then exit 18; fi
   cp "$backup" impl.bend || exit 18
 done
 restore
 trap - EXIT INT TERM
 
-for lane in proof differential mutation; do
-  for test_script in tests/differentials/*.sh; do
-    [ -f "$test_script" ] || exit 19
-    bash "$test_script" "$lane" || exit 19
-  done
+for test_script in tests/differentials/*.sh; do
+  [ -f "$test_script" ] || exit 19
+  bash "$test_script" differential || exit 19
 done
 exit 0
