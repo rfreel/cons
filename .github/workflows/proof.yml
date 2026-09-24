@@ -19,10 +19,17 @@ jobs:
           test -n "$bend_path"
           chmod +x "$bend_path"
           echo "$(dirname "$PWD/$bend_path")" >> "$GITHUB_PATH"
+      - name: Split verified compiler archive for local gate
+        run: split -b 20m -d bend.tar.gz bend.part.
       - uses: actions/upload-artifact@v4
         with:
-          name: bend-2.0.24-linux-x64
-          path: bend.tar.gz
+          name: bend-2.0.24-part-00
+          path: bend.part.00
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bend-2.0.24-part-01
+          path: bend.part.01
           retention-days: 1
       - name: Check both Bend proofs
         run: |
