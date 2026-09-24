@@ -19,7 +19,23 @@ jobs:
           test -n "$bend_path"
           chmod +x "$bend_path"
           echo "$(dirname "$PWD/$bend_path")" >> "$GITHUB_PATH"
-      - name: Check proof
+      - name: Check both Bend proofs
         run: |
           bend --version
           bend PROOF.bend
+          cd package/cons
+          bend PROOF.bend
+      - name: Reject deliberate implementation changes
+        shell: bash
+        run: |
+          cd package/cons
+          cp impl.bend impl.original
+          trap 'cp impl.original impl.bend; rm -f impl.original' EXIT
+          for mutant in tests/mutations/*.bend; do
+            cp "$mutant" impl.bend
+            if bend PROOF.bend; then
+              echo "Mutation unexpectedly passed: $mutant"
+              exit 1
+            fi
+            cp impl.original impl.bend
+          done
