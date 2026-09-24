@@ -1,0 +1,25 @@
+name: Bend proof
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Bend 2.0.24
+        shell: bash
+        run: |
+          curl -fsSL --retry 3 -o bend.tar.gz https://github.com/bendlang/bend/releases/download/v2.0.24/bend-2.0.24-linux-x64.tar.gz
+          echo 'a05c1b5ecab1393f3dd5d67fedbeb83d5dd244c4187c7b36378b6a67a719ac2a  bend.tar.gz' | sha256sum -c -
+          mkdir -p .bend-bin
+          tar -xzf bend.tar.gz -C .bend-bin
+          bend_path=$(find .bend-bin -type f -name bend -print -quit)
+          test -n "$bend_path"
+          chmod +x "$bend_path"
+          echo "$(dirname "$PWD/$bend_path")" >> "$GITHUB_PATH"
+      - name: Check proof
+        run: |
+          bend --version
+          bend PROOF.bend
