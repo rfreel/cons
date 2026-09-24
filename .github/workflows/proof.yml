@@ -36,10 +36,12 @@ jobs:
         run: |
           mkdir -p workspace-check package-check
           git -C workspace-check init -q
+          git -C workspace-check symbolic-ref HEAD refs/heads/bootstrap
           git -C workspace-check fetch -q ../snapshots/workspace.bundle '+refs/*:refs/*'
           git -C workspace-check checkout -q master
           grep -q 'path: cons' workspace-check/.bv/workspace.yaml
           git -C package-check init -q
+          git -C package-check symbolic-ref HEAD refs/heads/bootstrap
           git -C package-check fetch -q ../snapshots/cons.bundle '+refs/*:refs/*'
           git -C package-check checkout -q main
           git -C package-check merge-base --is-ancestor cons/frozen HEAD
