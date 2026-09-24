@@ -19,6 +19,11 @@ jobs:
           test -n "$bend_path"
           chmod +x "$bend_path"
           echo "$(dirname "$PWD/$bend_path")" >> "$GITHUB_PATH"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bend-2.0.24-linux-x64
+          path: bend.tar.gz
+          retention-days: 1
       - name: Check both Bend proofs
         run: |
           bend --help | head -1
