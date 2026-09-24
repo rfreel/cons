@@ -33,6 +33,7 @@ jobs:
           trap 'cp impl.original impl.bend; rm -f impl.original' EXIT
           for mutant in tests/mutations/*.bend; do
             cp "$mutant" impl.bend
+            bend impl.bend
             if bend PROOF.bend; then
               echo "Mutation unexpectedly passed: $mutant"
               exit 1
