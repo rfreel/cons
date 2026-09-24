@@ -1,0 +1,69 @@
+name: Bend proof
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Bend 2.0.24
+        shell: bash
+        run: |
+          curl -fsSL --retry 3 -o bend.tar.gz https://github.com/bendlang/bend/releases/download/v2.0.24/bend-2.0.24-linux-x64.tar.gz
+          echo 'a05c1b5ecab1393f3dd5d67fedbeb83d5dd244c4187c7b36378b6a67a719ac2a  bend.tar.gz' | sha256sum -c -
+          mkdir -p .bend-bin
+          tar -xzf bend.tar.gz -C .bend-bin
+          bend_path=$(find .bend-bin -type f -name bend -print -quit)
+          test -n "$bend_path"
+          chmod +x "$bend_path"
+          echo "$(dirname "$PWD/$bend_path")" >> "$GITHUB_PATH"
+      - name: Split verified compiler archive for local gate
+        run: split -b 20m -d bend.tar.gz bend.part.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bend-2.0.24-part-00
+          path: bend.part.00
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bend-2.0.24-part-01
+          path: bend.part.01
+          retention-days: 1
+      - name: Check bundled Git histories from a clean checkout
+        shell: bash
+        run: |
+          mkdir -p workspace-check package-check
+          git -C workspace-check init -q
+          git -C workspace-check symbolic-ref HEAD refs/heads/bootstrap
+          git -C workspace-check fetch -q ../snapshots/workspace.bundle '+refs/*:refs/*'
+          git -C workspace-check checkout -q master
+          grep -q 'path: cons' workspace-check/.bv/workspace.yaml
+          git -C package-check init -q
+          git -C package-check symbolic-ref HEAD refs/heads/bootstrap
+          git -C package-check fetch -q ../snapshots/cons.bundle '+refs/*:refs/*'
+          git -C package-check checkout -q main
+          git -C package-check merge-base --is-ancestor cons/frozen HEAD
+          (cd package-check && bash gate.sh check)
+      - name: Check both Bend proofs
+        run: |
+          bend --help | head -1
+          bend PROOF.bend
+          cd package/cons
+          bend PROOF.bend
+      - name: Reject deliberate implementation changes
+        shell: bash
+        run: |
+          cd package/cons
+          cp impl.bend impl.original
+          trap 'cp impl.original impl.bend; rm -f impl.original' EXIT
+          for mutant in tests/mutations/*.bend; do
+            cp "$mutant" impl.bend
+            bend impl.bend
+            if bend PROOF.bend; then
+              echo "Mutation unexpectedly passed: $mutant"
+              exit 1
+            fi
+            cp impl.original impl.bend
+          done
