@@ -12,13 +12,13 @@ git rev-parse -q --verify 'refs/tags/cons/frozen' >/dev/null || exit 15
 git diff --quiet cons/frozen -- AGENTS.md OBJECTIVE.md CORRECTNESS.md SPEC.bend state.bend LAWS.bend gate.sh docs/PIN.toml pins || exit 15
 
 expected_version=$(sed -n 's/^bend_version = "\(.*\)"$/\1/p' docs/PIN.toml)
-actual_version=$(bend --help) || exit 16
+actual_version=$(bend version) || exit 16
 printf '%s\n' "$actual_version"
-case "$actual_version" in "Bend $expected_version:"*) ;; *) exit 16 ;; esac
+test "$actual_version" = "bend $expected_version" || exit 16
 
 bend PROOF.bend || exit 17
 
-backup=$(mktemp) || exit 18
+backup=$(mktemp ./cons-impl.XXXXXXXX) || exit 18
 cp impl.bend "$backup" || exit 18
 restore() { cp "$backup" impl.bend; rm -f "$backup"; }
 trap restore EXIT INT TERM
