@@ -21,7 +21,7 @@ jobs:
           echo "$(dirname "$PWD/$bend_path")" >> "$GITHUB_PATH"
       - name: Check both Bend proofs
         run: |
-          bend --version
+          bend --help | head -1
           bend PROOF.bend
           cd package/cons
           bend PROOF.bend
