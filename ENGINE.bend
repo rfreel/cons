@@ -14,22 +14,31 @@ type OperativityDecision is Data:
 # Resolve one repeal relation over the two-rule vertical slice.
 # This is deliberately small: it demonstrates relation semantics before
 # generalizing to an arbitrary relation graph.
+def status_for_a18(newer: Source.RuleId, older: Source.RuleId) -> Status:
+  match older:
+    case Source.A18{}:
+      Repealed{newer}
+    case Source.A21{}:
+      Operative{}
+
+def status_for_a21(newer: Source.RuleId, older: Source.RuleId) -> Status:
+  match older:
+    case Source.A18{}:
+      Operative{}
+    case Source.A21{}:
+      Repealed{newer}
+
+def status_for_rule(rule: Source.RuleId, newer: Source.RuleId, older: Source.RuleId) -> Status:
+  match rule:
+    case Source.A18{}:
+      status_for_a18(newer, older)
+    case Source.A21{}:
+      status_for_a21(newer, older)
+
 def status_under(rule: Source.RuleId, relation: Source.Relation) -> Status:
   match relation:
     case Source.Repeals{newer, older}:
-      match rule:
-        case Source.A18{}:
-          match older:
-            case Source.A18{}:
-              Repealed{newer}
-            case Source.A21{}:
-              Operative{}
-        case Source.A21{}:
-          match older:
-            case Source.A18{}:
-              Operative{}
-            case Source.A21{}:
-              Repealed{newer}
+      status_for_rule(rule, newer, older)
 
 # Bend matches parameters rather than computed expressions, so resolution
 # and classification are separate definitions.
